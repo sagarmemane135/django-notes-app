@@ -13,17 +13,16 @@ pipeline {
         }
         stage('Code') {
             steps {
-                clone("https://github.com/sagarmemane135/django-notes-app.git","main")
-                // echo "This is cloning the code"
-                // git url: "https://github.com/sagarmemane135/django-notes-app.git", branch: "main"
-                // echo "Code cloned successfully !"
+                script {
+                    clone("https://github.com/sagarmemane135/django-notes-app.git","main")
+                }
             }
         }
         stage('Build') {
             steps {
-                echo "This is building the code"
-                sh "docker build -t notes-app:latest ."
-                echo "Docker image Build succeeded!"
+                script {
+                    docker_build("notes-app","latest","memanes688")
+                }
             }
         }
         stage('Test') {
