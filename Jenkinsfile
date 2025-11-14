@@ -1,29 +1,55 @@
-@Library('Shared')_
-pipeline{
-    agent { label 'dev-server'}
-    
-    stages{
-        stage("Code clone"){
-            steps{
-                sh "whoami"
-            clone("https://github.com/LondheShubham153/django-notes-app.git","main")
+@Library("SharedLib") _
+
+pipeline {
+    agent {label 'kali'}
+
+    stages {
+        stage('Hello'){
+            steps {
+                script{
+                    hello()
+                }
             }
         }
-        stage("Code Build"){
-            steps{
-            dockerbuild("notes-app","latest")
+        stage('Code') {
+            steps {
+                clone("https://github.com/sagarmemane135/django-notes-app.git","main")
+                // echo "This is cloning the code"
+                // git url: "https://github.com/sagarmemane135/django-notes-app.git", branch: "main"
+                // echo "Code cloned successfully !"
             }
         }
-        stage("Push to DockerHub"){
-            steps{
-                dockerpush("dockerHubCreds","notes-app","latest")
+        stage('Build') {
+            steps {
+                echo "This is building the code"
+                sh "docker build -t notes-app:latest ."
+                echo "Docker image Build succeeded!"
             }
         }
-        stage("Deploy"){
-            steps{
-                deploy()
+        stage('Test') {
+            steps {
+                echo "This is testing the code"
+                sh "trivy image --severity HIGH,CRITICAL notes-app:latest"
+                echo "Docker Image Scan Complete"
             }
         }
-        
+        stage('Push to DockerHub') {
+            steps {
+                echo "This is pushing the image"
+                withCredentials([usernamePassword('credentialsId':'dockerhubCred',usernameVariable:'dockerhubUser',passwordVariable:'dockerhubPass')]){
+                    sh "docker login -u ${env.dockerhubUser} -p ${env.dockerhubPass}"
+                    sh "docker image tag notes-app:latest ${env.dockerhubUser}/notes-app:latest"
+                    sh "docker push ${env.dockerhubUser}/notes-app:latest"
+                }
+                echo "Docker Image Scan Complete"
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo "This is deploying the code"
+                sh "docker compose up -d"
+                echo "Container Started !!"
+            }
+        }
     }
 }
